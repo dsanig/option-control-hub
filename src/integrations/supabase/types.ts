@@ -14,7 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Relationships: []
+      }
+      database_connections: {
+        Row: {
+          connection_type: string
+          created_at: string
+          database_name: string
+          encrypted_password: string
+          host: string
+          id: string
+          last_error: string | null
+          last_success: string | null
+          latency_ms: number | null
+          name: string
+          port: number
+          schema_name: string | null
+          status: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          connection_type: string
+          created_at?: string
+          database_name: string
+          encrypted_password: string
+          host: string
+          id?: string
+          last_error?: string | null
+          last_success?: string | null
+          latency_ms?: number | null
+          name: string
+          port: number
+          schema_name?: string | null
+          status?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          connection_type?: string
+          created_at?: string
+          database_name?: string
+          encrypted_password?: string
+          host?: string
+          id?: string
+          last_error?: string | null
+          last_success?: string | null
+          latency_ms?: number | null
+          name?: string
+          port?: number
+          schema_name?: string | null
+          status?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      refresh_settings: {
+        Row: {
+          auto_pause_on_error: boolean
+          created_at: string
+          global_interval_seconds: number
+          id: string
+          tab_overrides: Json
+          updated_at: string
+        }
+        Insert: {
+          auto_pause_on_error?: boolean
+          created_at?: string
+          global_interval_seconds?: number
+          id?: string
+          tab_overrides?: Json
+          updated_at?: string
+        }
+        Update: {
+          auto_pause_on_error?: boolean
+          created_at?: string
+          global_interval_seconds?: number
+          id?: string
+          tab_overrides?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roll_engine_config: {
+        Row: {
+          created_at: string
+          exact_timestamp_match: boolean
+          id: string
+          include_fees_in_credit: boolean
+          include_realized_pl: boolean
+          inference_method: string
+          tolerance_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exact_timestamp_match?: boolean
+          id?: string
+          include_fees_in_credit?: boolean
+          include_realized_pl?: boolean
+          inference_method?: string
+          tolerance_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exact_timestamp_match?: boolean
+          id?: string
+          include_fees_in_credit?: boolean
+          include_realized_pl?: boolean
+          inference_method?: string
+          tolerance_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      schema_mappings: {
+        Row: {
+          column_name: string
+          connection_id: string
+          created_at: string
+          data_type: string
+          id: string
+          is_valid: boolean
+          null_rate: number | null
+          sample_value: string | null
+          schema_name: string
+          semantic_field: string
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          column_name: string
+          connection_id: string
+          created_at?: string
+          data_type: string
+          id?: string
+          is_valid?: boolean
+          null_rate?: number | null
+          sample_value?: string | null
+          schema_name: string
+          semantic_field: string
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          column_name?: string
+          connection_id?: string
+          created_at?: string
+          data_type?: string
+          id?: string
+          is_valid?: boolean
+          null_rate?: number | null
+          sample_value?: string | null
+          schema_name?: string
+          semantic_field?: string
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schema_mappings_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "database_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
