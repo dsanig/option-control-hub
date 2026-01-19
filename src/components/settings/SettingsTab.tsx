@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { mockConnections, mockMappings } from '@/data/mockData';
-import { DatabaseConnection, ColumnMapping } from '@/types/investment';
+import { mockMappings } from '@/data/mockData';
+import { ColumnMapping } from '@/types/investment';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,28 +16,22 @@ import {
 } from '@/components/ui/select';
 import { 
   Database, 
-  Plus, 
   RefreshCw, 
   Check, 
   X, 
-  AlertTriangle,
-  Wifi,
-  WifiOff,
   Settings2,
   Table,
-  Columns,
   Link2,
   TestTube,
-  Pause,
-  Play,
-  Trash2,
   Edit
 } from 'lucide-react';
+import { ConnectionsSection } from './ConnectionsSection';
+import { useDatabaseConnections } from '@/hooks/useDatabaseConnections';
 
 export function SettingsTab() {
   const [activeSection, setActiveSection] = useState<'connections' | 'mappings' | 'rollengine' | 'refresh'>('connections');
-  const [connections, setConnections] = useState<DatabaseConnection[]>(mockConnections);
   const [mappings] = useState<ColumnMapping[]>(mockMappings);
+  const { connections } = useDatabaseConnections();
 
   const sections = [
     { id: 'connections', label: 'Connections', icon: Database },
@@ -46,20 +40,6 @@ export function SettingsTab() {
     { id: 'refresh', label: 'Refresh Settings', icon: RefreshCw },
   ];
 
-  const getStatusBadge = (status: DatabaseConnection['status']) => {
-    switch (status) {
-      case 'ok':
-        return <Badge className="bg-gain/20 text-gain border-gain/30">Connected</Badge>;
-      case 'warning':
-        return <Badge className="bg-warning/20 text-warning border-warning/30">Issues</Badge>;
-      case 'error':
-        return <Badge className="bg-loss/20 text-loss border-loss/30">Error</Badge>;
-      case 'disconnected':
-        return <Badge variant="outline">Disconnected</Badge>;
-      case 'paused':
-        return <Badge variant="secondary">Paused</Badge>;
-    }
-  };
 
   return (
     <div className="h-full flex">
@@ -90,70 +70,7 @@ export function SettingsTab() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        {activeSection === 'connections' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Database Connections</h3>
-                <p className="text-sm text-muted-foreground">Manage MSSQL and PostgreSQL connections</p>
-              </div>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add Connection
-              </Button>
-            </div>
-
-            <div className="grid gap-4">
-              {connections.map((conn) => (
-                <div 
-                  key={conn.id} 
-                  className="bg-card border border-border rounded-lg p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-10 h-10 rounded-lg flex items-center justify-center",
-                        conn.status === 'ok' ? "bg-gain/10" : "bg-surface-2"
-                      )}>
-                        {conn.status === 'ok' ? (
-                          <Wifi className="w-5 h-5 text-gain" />
-                        ) : (
-                          <WifiOff className="w-5 h-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{conn.name}</h4>
-                          {getStatusBadge(conn.status)}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {conn.type.toUpperCase()} • {conn.host}:{conn.port} • {conn.database}
-                        </p>
-                        {conn.lastSuccess && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Last sync: {conn.lastSuccess.toLocaleTimeString()} • Latency: {conn.latencyMs}ms
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="gap-1">
-                        <TestTube className="w-3 h-3" />
-                        Test
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" className={conn.status === 'paused' ? '' : 'text-warning'}>
-                        {conn.status === 'paused' ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {activeSection === 'connections' && <ConnectionsSection />}
 
         {activeSection === 'mappings' && (
           <div className="space-y-6">
