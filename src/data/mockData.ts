@@ -7,7 +7,8 @@ import {
   SectorAllocation,
   DatabaseConnection,
   ColumnMapping,
-  PerformanceRecord
+  PerformanceRecord,
+  RollHistoryEntry
 } from '@/types/investment';
 
 // Generate dates for the last N days
@@ -81,6 +82,50 @@ export const mockPutPositions: OptionPosition[] = underlyings.flatMap((underlyin
     const premiumCollected = capitalAtRisk * (0.02 + Math.random() * 0.03);
     const currentValue = premiumCollected * (0.3 + Math.random() * 0.5);
     
+    // Roll simulation - some positions have been rolled
+    const isRolled = Math.random() < 0.35;
+    const rollCount = isRolled ? Math.floor(Math.random() * 4) + 1 : 0;
+    
+    // Generate roll history
+    const rollHistory: RollHistoryEntry[] = [];
+    let totalRollCredits = 0;
+    let totalRealizedPL = 0;
+    
+    if (isRolled) {
+      for (let r = 0; r < rollCount; r++) {
+        const rollCredit = 800 + Math.random() * 3000;
+        const realizedPL = -200 + Math.random() * 1500;
+        const rollDate = new Date();
+        rollDate.setDate(rollDate.getDate() - (rollCount - r) * 21); // Each roll ~3 weeks apart
+        
+        const fromStrike = strike + (rollCount - r) * 5;
+        const toStrike = strike + (rollCount - r - 1) * 5;
+        const fromExpiry = new Date(rollDate);
+        fromExpiry.setDate(fromExpiry.getDate() + 7);
+        const toExpiry = new Date(rollDate);
+        toExpiry.setDate(toExpiry.getDate() + 28);
+        
+        rollHistory.push({
+          rollDate,
+          fromSymbol: `${underlying} ${fromStrike}P`,
+          toSymbol: `${underlying} ${toStrike}P`,
+          fromStrike,
+          toStrike,
+          fromExpiry,
+          toExpiry,
+          credit: rollCredit,
+          realizedPL: realizedPL,
+        });
+        
+        totalRollCredits += rollCredit;
+        totalRealizedPL += realizedPL;
+      }
+    }
+    
+    // Calculate breakeven: for a short put, breakeven = strike - (premium + roll credits) / (contracts * multiplier)
+    const totalPremiumWithRolls = premiumCollected + totalRollCredits + totalRealizedPL;
+    const breakEvenPrice = strike - (totalPremiumWithRolls / (Math.abs(contracts) * multiplier));
+    
     positions.push({
       id: `put-${underlying}-${i}`,
       date: new Date(),
@@ -108,9 +153,14 @@ export const mockPutPositions: OptionPosition[] = underlyings.flatMap((underlyin
       vega: (100 + Math.random() * 200) * Math.abs(contracts),
       iv: 0.2 + Math.random() * 0.3,
       isItm: Math.random() < 0.1,
-      isRolled: Math.random() < 0.2,
-      rollGroupId: Math.random() < 0.2 ? `roll-${Date.now()}-${idx}` : undefined,
-      rollCredit: Math.random() < 0.2 ? 5000 + Math.random() * 15000 : undefined,
+      isRolled,
+      rollCount,
+      rollHistory,
+      totalRollCredits,
+      totalRealizedPL,
+      breakEvenPrice,
+      rollGroupId: isRolled ? `roll-${Date.now()}-${idx}` : undefined,
+      rollCredit: isRolled ? totalRollCredits : undefined,
     });
   }
   return positions;
@@ -134,6 +184,42 @@ export const mockCallPositions: OptionPosition[] = underlyings.slice(0, 6).flatM
     
     const premiumCollected = Math.abs(contracts) * multiplier * strike * 0.015;
     const currentValue = premiumCollected * (0.2 + Math.random() * 0.4);
+    
+    // For calls, less likely to be rolled
+    const isRolled = Math.random() < 0.15;
+    const rollCount = isRolled ? Math.floor(Math.random() * 2) + 1 : 0;
+    
+    const rollHistory: RollHistoryEntry[] = [];
+    let totalRollCredits = 0;
+    let totalRealizedPL = 0;
+    
+    if (isRolled) {
+      for (let r = 0; r < rollCount; r++) {
+        const rollCredit = 500 + Math.random() * 2000;
+        const realizedPL = -100 + Math.random() * 800;
+        const rollDate = new Date();
+        rollDate.setDate(rollDate.getDate() - (rollCount - r) * 21);
+        
+        rollHistory.push({
+          rollDate,
+          fromSymbol: `${underlying} ${strike - 5}C`,
+          toSymbol: `${underlying} ${strike}C`,
+          fromStrike: strike - 5,
+          toStrike: strike,
+          fromExpiry: new Date(),
+          toExpiry: expDate,
+          credit: rollCredit,
+          realizedPL,
+        });
+        
+        totalRollCredits += rollCredit;
+        totalRealizedPL += realizedPL;
+      }
+    }
+    
+    // For a short call, breakeven = strike + (premium + roll credits) / (contracts * multiplier)
+    const totalPremiumWithRolls = premiumCollected + totalRollCredits + totalRealizedPL;
+    const breakEvenPrice = strike + (totalPremiumWithRolls / (Math.abs(contracts) * multiplier));
     
     positions.push({
       id: `call-${underlying}-${i}`,
@@ -162,7 +248,14 @@ export const mockCallPositions: OptionPosition[] = underlyings.slice(0, 6).flatM
       vega: (80 + Math.random() * 150) * Math.abs(contracts),
       iv: 0.18 + Math.random() * 0.25,
       isItm: Math.random() < 0.05,
-      isRolled: false,
+      isRolled,
+      rollCount,
+      rollHistory,
+      totalRollCredits,
+      totalRealizedPL,
+      breakEvenPrice,
+      rollGroupId: isRolled ? `roll-call-${idx}` : undefined,
+      rollCredit: isRolled ? totalRollCredits : undefined,
     });
   }
   return positions;

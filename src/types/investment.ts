@@ -51,6 +51,18 @@ export interface PortfolioPosition {
   sector?: string;
 }
 
+export interface RollHistoryEntry {
+  rollDate: Date;
+  fromSymbol: string;
+  toSymbol: string;
+  fromStrike: number;
+  toStrike: number;
+  fromExpiry: Date;
+  toExpiry: Date;
+  credit: number;      // Net credit/debit from the roll
+  realizedPL: number;  // P/L from closing the old leg
+}
+
 export interface OptionPosition extends PortfolioPosition {
   underlying: string;
   expDate: Date;
@@ -69,7 +81,13 @@ export interface OptionPosition extends PortfolioPosition {
   vega?: number;
   iv?: number;
   isItm: boolean;
+  // Roll tracking
   isRolled: boolean;
+  rollCount: number;           // How many times this position has been rolled
+  rollHistory: RollHistoryEntry[];  // History of all rolls
+  totalRollCredits: number;    // Sum of all roll credits
+  totalRealizedPL: number;     // Sum of all realized P/L from rolls
+  breakEvenPrice: number;      // Price where position breaks even (considering all roll credits)
   rollGroupId?: string;
   rollCredit?: number;
   additionalProfit?: number;
