@@ -3,19 +3,19 @@
 export const formatCurrency = (value: number, compact = false): string => {
   if (compact) {
     if (Math.abs(value) >= 1000000000) {
-      return `$${(value / 1000000000).toFixed(2)}B`;
+      return `€${(value / 1000000000).toFixed(2)}B`;
     }
     if (Math.abs(value) >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
+      return `€${(value / 1000000).toFixed(2)}M`;
     }
     if (Math.abs(value) >= 1000) {
-      return `$${(value / 1000).toFixed(1)}K`;
+      return `€${(value / 1000).toFixed(1)}K`;
     }
   }
   
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('de-DE', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
