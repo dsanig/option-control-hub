@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Search, Filter, Download, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search, Filter, Download, ArrowUpDown, RefreshCw, Info } from 'lucide-react';
 import { OptionPosition } from '@/types/investment';
 import { mockPutPositions, mockCallPositions } from '@/data/mockData';
 import { 
@@ -8,12 +8,24 @@ import {
   formatPercent, 
   formatExpiry, 
   getDTELabel,
-  getValueClass 
+  getValueClass,
+  formatDateShort
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface OptionsTableProps {
   positions: OptionPosition[];
@@ -211,7 +223,24 @@ function OptionsTable({ positions, title }: OptionsTableProps) {
               <th>Delta</th>
               <th>Theta</th>
               <th>IV</th>
-              <th>Rolled</th>
+              <th>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-1 cursor-help">
+                        Rolled
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs max-w-[200px]">
+                        Shows roll count, total credits collected, and minimum close price to break even
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </th>
+              <th>Break-Even</th>
             </tr>
           </thead>
           <tbody>
@@ -230,7 +259,7 @@ function OptionsTable({ positions, title }: OptionsTableProps) {
                     className="group-header cursor-pointer"
                     onClick={() => toggleGroup(expKey)}
                   >
-                    <td colSpan={15} className="!p-0">
+                    <td colSpan={16} className="!p-0">
                       <div className="flex items-center justify-between px-4 py-2 bg-surface-2 hover:bg-surface-3">
                         <div className="flex items-center gap-3">
                           {isExpanded ? (
@@ -305,10 +334,105 @@ function OptionsTable({ positions, title }: OptionsTableProps) {
                       </td>
                       <td>{pos.iv ? `${(pos.iv * 100).toFixed(0)}%` : '-'}</td>
                       <td>
-                        {pos.isRolled && (
-                          <Badge variant="outline" className="text-xs text-primary border-primary">
-                            Rolled
-                          </Badge>
+                        {pos.isRolled && pos.rollCount > 0 ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="inline-flex">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs text-primary border-primary cursor-pointer hover:bg-primary/10 flex items-center gap-1"
+                                >
+                                  <RefreshCw className="w-3 h-3" />
+                                  {pos.rollCount}x
+                                </Badge>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0" align="end">
+                              <div className="p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-semibold text-sm">Roll History</h4>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {pos.rollCount} roll{pos.rollCount > 1 ? 's' : ''}
+                                  </Badge>
+                                </div>
+                                
+                                {/* Roll Summary */}
+                                <div className="grid grid-cols-2 gap-2 p-2 bg-surface-2 rounded-md text-xs">
+                                  <div>
+                                    <span className="text-muted-foreground">Total Credits:</span>
+                                    <span className={cn("ml-2 font-mono font-medium", getValueClass(pos.totalRollCredits))}>
+                                      {formatCurrency(pos.totalRollCredits)}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Realized P/L:</span>
+                                    <span className={cn("ml-2 font-mono font-medium", getValueClass(pos.totalRealizedPL))}>
+                                      {formatCurrency(pos.totalRealizedPL)}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {/* Break-even indicator */}
+                                <div className="p-2 bg-primary/10 border border-primary/20 rounded-md">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Min Close Price:</span>
+                                    <span className="font-mono font-bold text-primary">
+                                      {formatNumber(pos.breakEvenPrice, 2)}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {pos.putCall === 'PUT' 
+                                      ? 'Close below this price to lock in profit from all rolls'
+                                      : 'Close above this price to lock in profit from all rolls'}
+                                  </p>
+                                </div>
+                                
+                                {/* Roll entries */}
+                                {pos.rollHistory.length > 0 && (
+                                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    <div className="text-xs text-muted-foreground font-medium">Roll Details:</div>
+                                    {pos.rollHistory.map((roll, idx) => (
+                                      <div key={idx} className="text-xs p-2 bg-surface-3 rounded border border-border">
+                                        <div className="flex justify-between items-center mb-1">
+                                          <span className="text-muted-foreground">
+                                            {formatDateShort(roll.rollDate)}
+                                          </span>
+                                          <span className={cn("font-mono", getValueClass(roll.credit))}>
+                                            +{formatCurrency(roll.credit)}
+                                          </span>
+                                        </div>
+                                        <div className="text-muted-foreground">
+                                          {roll.fromSymbol} → {roll.toSymbol}
+                                        </div>
+                                        <div className="flex justify-between mt-1">
+                                          <span>Strike: {roll.fromStrike} → {roll.toStrike}</span>
+                                          <span className={cn("font-mono", getValueClass(roll.realizedPL))}>
+                                            P/L: {formatCurrency(roll.realizedPL)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {pos.isRolled && pos.rollCount > 0 ? (
+                          <span className={cn(
+                            "font-mono font-medium",
+                            pos.putCall === 'PUT' 
+                              ? pos.breakEvenPrice < pos.strike ? "text-gain" : "text-loss"
+                              : pos.breakEvenPrice > pos.strike ? "text-gain" : "text-loss"
+                          )}>
+                            {formatNumber(pos.breakEvenPrice, 2)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </td>
                     </tr>
