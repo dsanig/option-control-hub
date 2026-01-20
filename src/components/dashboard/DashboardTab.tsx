@@ -3,6 +3,7 @@ import { NAVChart } from './NAVChart';
 import { PremiumChart } from './PremiumChart';
 import { AllocationChart } from './AllocationChart';
 import { PerformanceChart } from './PerformanceChart';
+import { PriorityWatchlist } from './PriorityWatchlist';
 import { 
   mockKPIData, 
   mockNAVHistory, 
@@ -93,6 +94,12 @@ export function DashboardTab() {
         <NAVChart data={mockNAVHistory} />
         <PremiumChart data={mockMonthlyPremium} />
       </div>
+
+      {/* Priority Watchlist - Full Width */}
+      <PriorityWatchlist 
+        putPositions={mockPutPositions} 
+        callPositions={mockCallPositions} 
+      />
 
       {/* Bottom Row */}
       <div className="grid grid-cols-3 gap-6">
