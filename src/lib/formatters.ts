@@ -3,13 +3,13 @@
 export const formatCurrency = (value: number, compact = false): string => {
   if (compact) {
     if (Math.abs(value) >= 1000000000) {
-      return `€${(value / 1000000000).toFixed(2)}B`;
+      return `${(value / 1000000000).toFixed(2).replace('.', ',')} Mrd. €`;
     }
     if (Math.abs(value) >= 1000000) {
-      return `€${(value / 1000000).toFixed(2)}M`;
+      return `${(value / 1000000).toFixed(2).replace('.', ',')} Mio. €`;
     }
     if (Math.abs(value) >= 1000) {
-      return `€${(value / 1000).toFixed(1)}K`;
+      return `${(value / 1000).toFixed(1).replace('.', ',')} Tsd. €`;
     }
   }
   
