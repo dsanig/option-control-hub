@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, TestTube } from 'lucide-react';
 import { DatabaseConnection, ConnectionFormData } from '@/hooks/useDatabaseConnections';
+import { Switch } from '@/components/ui/switch';
 
 interface ConnectionDialogProps {
   open: boolean;
@@ -48,6 +49,7 @@ export function ConnectionDialog({
     schema_name: '',
     username: '',
     password: '',
+    use_ssl: true,
   });
 
   const [testResult, setTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
@@ -64,6 +66,7 @@ export function ConnectionDialog({
         schema_name: connection.schema_name || '',
         username: connection.username,
         password: '', // Don't prefill password
+        use_ssl: connection.use_ssl ?? true,
       });
     } else {
       setFormData({
@@ -75,6 +78,7 @@ export function ConnectionDialog({
         schema_name: '',
         username: '',
         password: '',
+        use_ssl: true,
       });
     }
     setTestResult(null);
@@ -201,6 +205,22 @@ export function ConnectionDialog({
               />
             </div>
           </div>
+
+          {formData.connection_type === 'postgresql' && (
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <div className="space-y-1">
+                <Label htmlFor="use-ssl">Require SSL</Label>
+                <p className="text-xs text-muted-foreground">
+                  Enable TLS for secure PostgreSQL connections.
+                </p>
+              </div>
+              <Switch
+                id="use-ssl"
+                checked={formData.use_ssl ?? true}
+                onCheckedChange={(checked) => setFormData({ ...formData, use_ssl: checked })}
+              />
+            </div>
+          )}
 
           {testResult && (
             <div
