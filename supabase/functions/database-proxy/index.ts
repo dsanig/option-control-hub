@@ -16,6 +16,7 @@ interface ConnectionConfig {
   schema_name?: string;
   username: string;
   password?: string;
+  use_ssl?: boolean;
 }
 
 interface QueryRequest {
@@ -100,6 +101,7 @@ serve(async (req) => {
           schema_name: config.schema_name || null,
           username: config.username,
           encrypted_password: encryptedPassword,
+          use_ssl: config.use_ssl ?? true,
           status: testResult.success ? 'ok' : 'error',
           last_success: testResult.success ? new Date().toISOString() : null,
           last_error: testResult.error || null,
@@ -205,6 +207,7 @@ serve(async (req) => {
         const config: ConnectionConfig = {
           ...conn,
           password: decryptPassword(conn.encrypted_password),
+          use_ssl: conn.use_ssl ?? true,
         };
 
         const schema = await exploreSchema(config, request.schema, request.table);
@@ -231,6 +234,7 @@ serve(async (req) => {
         const config: ConnectionConfig = {
           ...conn,
           password: decryptPassword(conn.encrypted_password),
+          use_ssl: conn.use_ssl ?? true,
         };
 
         const startTime = Date.now();
@@ -292,6 +296,7 @@ async function testConnection(config: ConnectionConfig): Promise<{ success: bool
   
   try {
     if (config.connection_type === 'postgresql') {
+      const useSsl = config.use_ssl ?? true;
       // Use Deno's postgres driver
       const { Client } = await import("https://deno.land/x/postgres@v0.17.0/mod.ts");
       
@@ -301,7 +306,7 @@ async function testConnection(config: ConnectionConfig): Promise<{ success: bool
         database: config.database_name,
         user: config.username,
         password: config.password,
-        tls: { enabled: false },
+        tls: { enabled: useSsl, enforce: false },
         connection: { attempts: 1 }
       });
       
@@ -345,6 +350,7 @@ async function exploreSchema(
 ): Promise<{ schemas?: string[]; tables?: string[]; columns?: Array<{ name: string; type: string; nullable: boolean }> }> {
   try {
     if (config.connection_type === 'postgresql') {
+      const useSsl = config.use_ssl ?? true;
       const { Client } = await import("https://deno.land/x/postgres@v0.17.0/mod.ts");
       
       const client = new Client({
@@ -353,7 +359,7 @@ async function exploreSchema(
         database: config.database_name,
         user: config.username,
         password: config.password,
-        tls: { enabled: false },
+        tls: { enabled: useSsl, enforce: false },
       });
       
       await client.connect();
@@ -409,6 +415,7 @@ async function executeQuery(
 ): Promise<{ success: boolean; data?: unknown[]; error?: string; rowCount?: number }> {
   try {
     if (config.connection_type === 'postgresql') {
+      const useSsl = config.use_ssl ?? true;
       const { Client } = await import("https://deno.land/x/postgres@v0.17.0/mod.ts");
       
       const client = new Client({
@@ -417,7 +424,7 @@ async function executeQuery(
         database: config.database_name,
         user: config.username,
         password: config.password,
-        tls: { enabled: false },
+        tls: { enabled: useSsl, enforce: false },
       });
       
       await client.connect();

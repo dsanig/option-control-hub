@@ -60,6 +60,7 @@ export type Database = {
           schema_name: string | null
           status: string
           updated_at: string
+          use_ssl: boolean
           username: string
         }
         Insert: {
@@ -77,6 +78,7 @@ export type Database = {
           schema_name?: string | null
           status?: string
           updated_at?: string
+          use_ssl?: boolean
           username: string
         }
         Update: {
@@ -94,6 +96,7 @@ export type Database = {
           schema_name?: string | null
           status?: string
           updated_at?: string
+          use_ssl?: boolean
           username?: string
         }
         Relationships: []

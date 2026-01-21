@@ -12,6 +12,7 @@ export interface DatabaseConnection {
   database_name: string;
   schema_name?: string;
   username: string;
+  use_ssl?: boolean;
   status: 'ok' | 'warning' | 'error' | 'disconnected' | 'paused';
   last_success?: string;
   last_error?: string;
@@ -30,6 +31,7 @@ export interface ConnectionFormData {
   schema_name?: string;
   username: string;
   password?: string;
+  use_ssl?: boolean;
 }
 
 export interface SchemaExploreResult {
