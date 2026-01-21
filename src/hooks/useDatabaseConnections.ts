@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface DatabaseConnection {
@@ -40,18 +39,42 @@ export interface SchemaExploreResult {
   columns?: Array<{ name: string; type: string; nullable: boolean }>;
 }
 
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/database-proxy`;
+// Determine if we're running locally or in cloud
+// Local mode: when running on localhost or 127.0.0.1
+const isLocalMode = () => {
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+};
+
+// Local API URL (Express server running on port 3001)
+const LOCAL_API_URL = 'http://localhost:3001/api/database-proxy';
+
+// Cloud API URL (Supabase Edge Function) - fallback for cloud deployments
+const CLOUD_API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/database-proxy`;
+
+function getApiUrl(): string {
+  return isLocalMode() ? LOCAL_API_URL : CLOUD_API_URL;
+}
 
 async function callDatabaseProxy<T>(action: string, body?: unknown): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const apiUrl = getApiUrl();
+  const isLocal = isLocalMode();
   
-  const response = await fetch(`${FUNCTION_URL}/${action}`, {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Only add auth headers for cloud mode
+  if (!isLocal) {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: { session } } = await supabase.auth.getSession();
+    headers['Authorization'] = `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
+    headers['apikey'] = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  }
+
+  const response = await fetch(`${apiUrl}/${action}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -170,5 +193,6 @@ export function useDatabaseConnections() {
     updateStatus: updateStatusMutation.mutateAsync,
     exploreSchema,
     executeQuery,
+    isLocalMode: isLocalMode(),
   };
 }

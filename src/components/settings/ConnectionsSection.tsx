@@ -40,6 +40,7 @@ export function ConnectionsSection() {
     isSavingConnection,
     deleteConnection,
     updateStatus,
+    isLocalMode,
   } = useDatabaseConnections();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -127,8 +128,20 @@ export function ConnectionsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Database Connections</h3>
-          <p className="text-sm text-muted-foreground">Manage MSSQL and PostgreSQL connections</p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Database Connections</h3>
+            {isLocalMode ? (
+              <Badge className="bg-gain/20 text-gain border-gain/30">Local Mode</Badge>
+            ) : (
+              <Badge variant="outline">Cloud Mode</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {isLocalMode 
+              ? 'Running locally - all data stays on your machine' 
+              : 'Manage MSSQL and PostgreSQL connections'
+            }
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()}>
