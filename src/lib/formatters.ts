@@ -1,18 +1,6 @@
 // Formatting utilities for financial data
 
-export const formatCurrency = (value: number, compact = false): string => {
-  if (compact) {
-    if (Math.abs(value) >= 1000000000) {
-      return `${(value / 1000000000).toFixed(2).replace('.', ',')} Mrd. €`;
-    }
-    if (Math.abs(value) >= 1000000) {
-      return `${(value / 1000000).toFixed(2).replace('.', ',')} Mio. €`;
-    }
-    if (Math.abs(value) >= 1000) {
-      return `${(value / 1000).toFixed(1).replace('.', ',')} Tsd. €`;
-    }
-  }
-  
+export const formatCurrency = (value: number, _compact = false): string => {
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
     currency: 'EUR',
