@@ -30,6 +30,7 @@ This server runs locally on your machine to handle database connections without 
 ## Environment Variables
 
 - `API_PORT`: Change the API server port (default: 3001)
+- `ALLOWED_ORIGINS`: Comma-separated list of extra allowed origins or hostnames for CORS (e.g. `https://your-host,dev.example.com`)
 
 ## Security Notes
 
