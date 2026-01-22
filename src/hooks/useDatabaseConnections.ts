@@ -46,7 +46,25 @@ function getLocalApiUrl(): string {
   }
 
   const hostname = window.location.hostname || 'localhost';
-  return `http://${hostname}:3001/api/database-proxy`;
+
+  const isPrivateHost = (host: string) => {
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
+      return true;
+    }
+
+    const ipv4Match = host.match(/^(\d{1,3})(?:\.(\d{1,3})){3}$/);
+    if (ipv4Match) {
+      const [a, b] = host.split('.').map(Number);
+      if (a === 10) return true;
+      if (a === 192 && b === 168) return true;
+      if (a === 172 && b >= 16 && b <= 31) return true;
+    }
+
+    return host.endsWith('.local');
+  };
+
+  const apiHost = isPrivateHost(hostname) ? hostname : 'localhost';
+  return `http://${apiHost}:3001/api/database-proxy`;
 }
 
 async function callDatabaseProxy<T>(action: string, body?: unknown): Promise<T> {
