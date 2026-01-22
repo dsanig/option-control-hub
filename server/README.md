@@ -18,7 +18,7 @@ This server runs locally on your machine to handle database connections without 
 
 ## How It Works
 
-- When running on `localhost`, the app automatically connects to the local API server (port 3001)
+- The app always connects to the local API server (port 3001)
 - All database credentials and queries stay on your local machine
 - Connections are stored in memory (cleared on server restart)
 
@@ -35,4 +35,4 @@ This server runs locally on your machine to handle database connections without 
 
 - Credentials are only stored in memory while the server is running
 - No data is transmitted to external servers
-- The server only accepts connections from localhost origins
+- The server only accepts connections from local origins (localhost or private network IPs)
