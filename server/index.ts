@@ -21,6 +21,33 @@ const isPrivateHost = (hostname: string) => {
   return hostname.endsWith('.local');
 };
 
+const getAllowedOrigins = () => {
+  const rawOrigins = process.env.ALLOWED_ORIGINS;
+  if (!rawOrigins) {
+    return [];
+  }
+
+  return rawOrigins
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+};
+
+const allowedOrigins = getAllowedOrigins();
+
+const isAllowedOrigin = (origin: string) => {
+  if (allowedOrigins.length === 0) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    return allowedOrigins.includes(origin) || allowedOrigins.includes(parsed.hostname);
+  } catch {
+    return allowedOrigins.includes(origin);
+  }
+};
+
 // Enable CORS for local development
 app.use(cors({
   origin: (origin, callback) => {
@@ -31,7 +58,7 @@ app.use(cors({
 
     try {
       const { hostname } = new URL(origin);
-      callback(null, isPrivateHost(hostname));
+      callback(null, isPrivateHost(hostname) || isAllowedOrigin(origin));
     } catch (error) {
       callback(error as Error);
     }
