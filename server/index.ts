@@ -5,9 +5,37 @@ import databaseApi from './database-api';
 const app = express();
 const PORT = process.env.API_PORT || 3001;
 
+const isPrivateHost = (hostname: string) => {
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+    return true;
+  }
+
+  const ipv4Match = hostname.match(/^(\d{1,3})(?:\.(\d{1,3})){3}$/);
+  if (ipv4Match) {
+    const [a, b] = hostname.split('.').map(Number);
+    if (a === 10) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+  }
+
+  return hostname.endsWith('.local');
+};
+
 // Enable CORS for local development
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    try {
+      const { hostname } = new URL(origin);
+      callback(null, isPrivateHost(hostname));
+    } catch (error) {
+      callback(error as Error);
+    }
+  },
   credentials: true,
 }));
 
