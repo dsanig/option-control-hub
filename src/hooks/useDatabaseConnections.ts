@@ -39,37 +39,19 @@ export interface SchemaExploreResult {
   columns?: Array<{ name: string; type: string; nullable: boolean }>;
 }
 
-function getLocalApiUrl(): string {
+function getApiBasePath(): string {
   const configuredUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_LOCAL_API_URL;
   if (configuredUrl) {
-    return configuredUrl;
+    return configuredUrl.replace(/\/$/, '');
   }
 
-  const hostname = window.location.hostname || 'localhost';
-
-  const isPrivateHost = (host: string) => {
-    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
-      return true;
-    }
-
-    const ipv4Match = host.match(/^(\d{1,3})(?:\.(\d{1,3})){3}$/);
-    if (ipv4Match) {
-      const [a, b] = host.split('.').map(Number);
-      if (a === 10) return true;
-      if (a === 192 && b === 168) return true;
-      if (a === 172 && b >= 16 && b <= 31) return true;
-    }
-
-    return host.endsWith('.local');
-  };
-
-  const apiHost = isPrivateHost(hostname) ? hostname : 'localhost';
-  return `http://${apiHost}:3001/api/database-proxy`;
+  // Default to same-origin API routing to avoid mixed-content/CORS issues.
+  return '/api';
 }
 
 
 async function callDatabaseProxy<T>(action: string, body?: unknown): Promise<T> {
-  const apiUrl = getLocalApiUrl();
+  const apiUrl = `${getApiBasePath()}/database-proxy`;
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

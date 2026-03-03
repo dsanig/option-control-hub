@@ -84,3 +84,5 @@ npm install
 npm run dev:api
 npm run dev
 ```
+
+In local dev, frontend requests should use relative `/api/...` paths and Vite will proxy them to the API server (`127.0.0.1:3001`).

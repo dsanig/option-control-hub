@@ -2,10 +2,9 @@
 
 ## Root causes fixed
 
-1. The frontend relied on a hard-coded local API URL (`http://localhost:3001`) which fails in deployed environments.
-2. DB clients were created per request with `new Client()`, increasing connection churn and causing avoidable failures under load.
-3. No dedicated DB health endpoint existed to validate app->DB connectivity.
-4. No production-oriented server deployment artifacts (Docker/systemd/env template) were present.
+1. The frontend connection test path used an absolute HTTP API URL (`http://localhost:3001/...`) in browser code, causing browser-level `TypeError: Failed to fetch` in deployed environments.
+2. Absolute local URLs broke remote clients and Cloudflare Tunnel usage (`localhost` pointed to the viewer's machine, not the API host).
+3. HTTPS frontend + HTTP API created mixed-content blocking when hardcoded `http://...` URLs were used.
 
 ## Runtime model
 
@@ -30,13 +29,19 @@ npm run dev:api
 npm run dev
 ```
 
+Vite proxies `/api/*` to `http://127.0.0.1:3001` in development, so browser fetches stay same-origin from the browser perspective.
+
 Health checks:
 
 ```bash
-curl -s http://localhost:3001/api/health
-curl -s http://localhost:3001/api/health/db
-curl -s http://localhost:3001/api/portfolio/summary
+curl -i http://127.0.0.1:3001/api/health
+curl -i http://127.0.0.1:3001/api/health/db
+curl -i http://127.0.0.1:3001/api/portfolio/summary
 ```
+
+Expected status codes:
+- `/api/health` => `HTTP/1.1 200 OK`
+- `/api/health/db` => `HTTP/1.1 200 OK` when DB is reachable; `HTTP/1.1 503 Service Unavailable` when DB is not reachable.
 
 ## Docker / self-hosted
 
@@ -60,9 +65,40 @@ sudo systemctl status option-control-hub-api
 
 Create `/etc/option-control-hub/api.env` with DB credentials and API config.
 
-## Cloudflare Tunnel note
+## Cloudflare Tunnel routing (single hostname)
 
-Tunnel only the web/app endpoints. Keep PostgreSQL private and reachable only on internal network/VPC from the API service.
+Prefer one public hostname and route by path to avoid CORS and mixed-content problems:
+
+- `https://option-control-hub.example.com/` -> frontend service
+- `https://option-control-hub.example.com/api/*` -> API service
+
+Example ingress config is provided at `deploy/cloudflared-ingress.example.yml`.
+
+Keep PostgreSQL private and reachable only on internal network/VPC from the API service. Never expose PostgreSQL to the browser.
+
+## Deterministic verification checklist
+
+1. **Server-local HTTP checks**
+   ```bash
+   curl -i http://127.0.0.1:${PORT:-3001}/api/health
+   curl -i http://127.0.0.1:${PORT:-3001}/api/health/db
+   ```
+
+2. **From another LAN machine**
+   ```bash
+   curl -i http://SERVER_IP:${PORT:-3001}/api/health
+   ```
+   Expected: `HTTP/1.1 200 OK` (confirms bind on `0.0.0.0` + network reachability).
+
+3. **In browser console (app origin)**
+   ```js
+   fetch('/api/health').then((r) => r.text()).then(console.log)
+   ```
+
+4. **DevTools network validation**
+   - Open DevTools -> Network.
+   - Trigger the connection test UI action.
+   - Confirm request URL is relative (`/api/...`) and response code is `200` (or `503` for DB-down scenarios, but not `(failed)`).
 
 ## Troubleshooting matrix
 

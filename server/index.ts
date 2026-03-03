@@ -6,7 +6,7 @@ import { getPortfolioSummary } from './portfolio';
 import { logger } from './logger';
 
 const app = express();
-const PORT = Number(process.env.API_PORT || 3001);
+const PORT = Number(process.env.PORT || process.env.API_PORT || 3001);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
   .split(',')
@@ -14,15 +14,17 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
   .filter(Boolean);
 
 app.use(express.json());
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.length === 0) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`Origin not allowed: ${origin}`));
-  },
-  credentials: true,
-}));
+
+if (allowedOrigins.length > 0) {
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`Origin not allowed: ${origin}`));
+    },
+    credentials: true,
+  }));
+}
 
 app.use('/api/database-proxy', databaseApi);
 
