@@ -1,83 +1,68 @@
 import express from 'express';
 import cors from 'cors';
 import databaseApi from './database-api';
+import { checkDbHealth } from './db';
+import { getPortfolioSummary } from './portfolio';
+import { logger } from './logger';
 
 const app = express();
-const PORT = process.env.API_PORT || 3001;
+const PORT = Number(process.env.API_PORT || 3001);
 
-const isPrivateHost = (hostname: string) => {
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
-    return true;
-  }
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-  const ipv4Match = hostname.match(/^(\d{1,3})(?:\.(\d{1,3})){3}$/);
-  if (ipv4Match) {
-    const [a, b] = hostname.split('.').map(Number);
-    if (a === 10) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 172 && b >= 16 && b <= 31) return true;
-  }
-
-  return hostname.endsWith('.local');
-};
-
-const getAllowedOrigins = () => {
-  const rawOrigins = process.env.ALLOWED_ORIGINS;
-  if (!rawOrigins) {
-    return [];
-  }
-
-  return rawOrigins
-    .split(',')
-    .map(origin => origin.trim())
-    .filter(Boolean);
-};
-
-const allowedOrigins = getAllowedOrigins();
-
-const isAllowedOrigin = (origin: string) => {
-  if (allowedOrigins.length === 0) {
-    return false;
-  }
-
-  try {
-    const parsed = new URL(origin);
-    return allowedOrigins.includes(origin) || allowedOrigins.includes(parsed.hostname);
-  } catch {
-    return allowedOrigins.includes(origin);
-  }
-};
-
-// Enable CORS for local development
+app.use(express.json());
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-
-    try {
-      const { hostname } = new URL(origin);
-      callback(null, isPrivateHost(hostname) || isAllowedOrigin(origin));
-    } catch (error) {
-      callback(error as Error);
-    }
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.length === 0) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`Origin not allowed: ${origin}`));
   },
   credentials: true,
 }));
 
-// Mount database API routes
 app.use('/api/database-proxy', databaseApi);
 
-// Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', mode: 'local' });
+  res.json({ status: 'ok', service: 'option-control-hub-api' });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Local database API server running at http://localhost:${PORT}`);
-  console.log(`   All database connections stay on your local machine.`);
-  console.log(`   No data is sent to the cloud.\n`);
+app.get('/api/health/db', async (_req, res) => {
+  try {
+    const health = await checkDbHealth();
+    res.json({ status: 'ok', db: 'connected', latencyMs: health.latencyMs });
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    logger.error('Database healthcheck failed', {
+      event: 'db_healthcheck_failed',
+      code: err.code,
+      message: err.message,
+    });
+    res.status(503).json({ status: 'error', db: 'unreachable', error: err.message });
+  }
+});
+
+app.get('/api/portfolio/summary', async (req, res) => {
+  try {
+    const accountId = typeof req.query.accountId === 'string' ? req.query.accountId : undefined;
+    const summary = await getPortfolioSummary({ accountId });
+    res.json({ success: true, summary });
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    logger.error('Portfolio summary query failed', {
+      event: 'portfolio_summary_failed',
+      code: err.code,
+      message: err.message,
+    });
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  logger.info('API server started', { port: PORT });
 });
 
 export default app;

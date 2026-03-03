@@ -40,7 +40,7 @@ export interface SchemaExploreResult {
 }
 
 function getLocalApiUrl(): string {
-  const configuredUrl = import.meta.env.VITE_LOCAL_API_URL;
+  const configuredUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_LOCAL_API_URL;
   if (configuredUrl) {
     return configuredUrl;
   }
@@ -66,6 +66,7 @@ function getLocalApiUrl(): string {
   const apiHost = isPrivateHost(hostname) ? hostname : 'localhost';
   return `http://${apiHost}:3001/api/database-proxy`;
 }
+
 
 async function callDatabaseProxy<T>(action: string, body?: unknown): Promise<T> {
   const apiUrl = getLocalApiUrl();
