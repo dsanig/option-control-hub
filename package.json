@@ -10,7 +10,10 @@
     "lint": "NODE_OPTIONS=\"--max-old-space-size=4096\" eslint .",
     "preview": "NODE_OPTIONS=\"--max-old-space-size=4096\" vite preview",
     "test": "NODE_OPTIONS=\"--max-old-space-size=4096\" vitest run",
-    "test:watch": "NODE_OPTIONS=\"--max-old-space-size=4096\" vitest"
+    "test:watch": "NODE_OPTIONS=\"--max-old-space-size=4096\" vitest",
+    "dev:api": "tsx server/index.ts",
+    "start:api": "node dist/index.js",
+    "build:api": "tsc -p tsconfig.server.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

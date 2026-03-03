@@ -13,7 +13,8 @@ import {
   mockPutPositions,
   mockCallPositions
 } from '@/data/mockData';
-import { formatCurrency, formatPercent } from '@/lib/formatters';
+import { formatCurrency } from '@/lib/formatters';
+import { usePortfolioSummary } from '@/hooks/usePortfolioSummary';
 import { 
   DollarSign, 
   Shield, 
@@ -24,6 +25,12 @@ import {
 } from 'lucide-react';
 
 export function DashboardTab() {
+  const { data: summary } = usePortfolioSummary();
+
+  const navTotal = summary ? Number(summary.total_market_value) : mockKPIData.navTotal;
+  const avgDelta = summary ? Number(summary.avg_delta) : mockKPIData.avgDelta;
+  const dataFreshness = summary?.last_updated_at ? new Date(summary.last_updated_at) : mockKPIData.dataFreshness;
+
   // Calculate breakdowns by expiry bucket
   const allOptions = [...mockPutPositions, ...mockCallPositions];
   const expiryBuckets = [
@@ -50,7 +57,7 @@ export function DashboardTab() {
       <div className="grid grid-cols-6 gap-4">
         <KPICard
           label="NAV Total"
-          value={formatCurrency(mockKPIData.navTotal, true)}
+          value={formatCurrency(navTotal, true)}
           change={mockKPIData.navChangePct}
           changeLabel="vs yesterday"
           trend="up"
@@ -78,13 +85,13 @@ export function DashboardTab() {
         />
         <KPICard
           label="Avg Delta"
-          value={mockKPIData.avgDelta.toFixed(3)}
+          value={avgDelta.toFixed(3)}
           icon={<Activity className="w-4 h-4" />}
         />
         <KPICard
           label="Data Freshness"
           value="Live"
-          changeLabel={mockKPIData.dataFreshness.toLocaleTimeString()}
+          changeLabel={dataFreshness.toLocaleTimeString()}
           icon={<Clock className="w-4 h-4" />}
         />
       </div>

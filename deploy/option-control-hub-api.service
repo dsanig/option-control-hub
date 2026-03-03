@@ -1,0 +1,16 @@
+[Unit]
+Description=Option Control Hub API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/option-control-hub
+EnvironmentFile=/etc/option-control-hub/api.env
+ExecStart=/usr/bin/npm run start:api
+Restart=always
+RestartSec=5
+User=optionhub
+Group=optionhub
+
+[Install]
+WantedBy=multi-user.target
