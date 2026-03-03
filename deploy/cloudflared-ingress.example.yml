@@ -1,0 +1,14 @@
+# Example Cloudflare Tunnel ingress for same-hostname routing.
+# Replace service targets with your real internal addresses.
+ingress:
+  # API routes go to the Node API service.
+  - hostname: option-control-hub.example.com
+    path: /api/*
+    service: http://127.0.0.1:3001
+
+  # Frontend routes go to the static/web service.
+  - hostname: option-control-hub.example.com
+    service: http://127.0.0.1:8080
+
+  # Catch-all
+  - service: http_status:404
